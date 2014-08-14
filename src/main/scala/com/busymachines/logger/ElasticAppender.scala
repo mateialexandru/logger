@@ -14,6 +14,8 @@ import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import com.busymachines.commons.CommonException
 
+import com.busymachines.commons.Implicits._
+
 /**
  * Created by Alexandru Matei on 14.08.2014.
  */
@@ -30,7 +32,6 @@ object ElasticAppender {
     @PluginAttribute("indexDocumentType") indexDocumentType: String,
     @PluginElement("Layout") layout: Layout[_ <: Serializable],
     @PluginElement("Filters") filter: Filter): ElasticAppender = new ElasticAppender(name, layout, filter, ignoreExceptions, hosts, port, clusterName, indexNamePrefix, indexNameDateFormat, indexDocumentType);
-
 }
 
 @Plugin(name = "Elastic", category = "Core", elementType = "appender", printObject = true)
@@ -46,82 +47,33 @@ class ElasticAppender(name: String, layout: Layout[_ <: Serializable], filter: F
     send(event)
   }
 
-  def send(event: LogEvent) {
-    val message = LogMessage(
-      event.getLevel.toString,
-      event.getThreadName,
-      event.getSource.getClassName,
-      event.getSource.getFileName,
-      event.getSource.getMethodName,
-      event.getSource.getLineNumber,
-      event.getMessage.getFormattedMessage,
-      DateTimeFormat.longDateTime.print(event.getTimeMillis),
-      event.getThrownProxy match {
-        case proxy: ThrowableProxy => proxy.getMessage
-        case _ => ""
-      },
-      exception = Option(event.getThrown()))
+  def send(event: LogEvent) {}
+//    val message = LogMessage(
+//      event.getLevel.toString,
+//      event.getThreadName,
+//      event.getSource.getClassName,
+//      event.getSource.getFileName,
+//      event.getSource.getMethodName,
+//      event.getSource.getLineNumber,
+//      event.getMessage.getFormattedMessage,
+//      DateTimeFormat.longDateTime.print(event.getTimeMillis),
+//      event.getThrownProxy match {
+//        case proxy: ThrowableProxy => proxy.getMessage
+//        case _ => ""
+//      },
+//      exception = Option(event.getThrown()))
 
-    try {
-      client.prepareIndex(
-        actualIndexName, indexDocumentType)
-        .setSource(message.toString)
-        .execute
-        .actionGet
-    } catch {
-      case ex: Exception =>
-        println(s"Exception while using ElasticSearch client! $ex")
-    } finally {
-    }
-  }
+//    try {
+//      client.prepareIndex(
+//        actualIndexName, indexDocumentType)
+//        .setSource(message.toString)
+//        .execute
+//        .actionGet
+//    } catch {
+//      case ex: Exception =>
+//        println(s"Exception while using ElasticSearch client! $ex")
+//    } finally {
+//    }
+//  }
 
-}
-
-case class LogMessage(level: String,
-  thread: String,
-  className: String,
-  fileName: String,
-  methodName: String,
-  lineNumber: Int,
-  message: String,
-  time: String,
-  stackTrace: String,
-  exception: Option[Throwable]) {
-
-  private def formatThrowable(e: Throwable): String = e match {
-    case e: CommonException => "commonexception"
-    case e: Throwable => "throwable"
-  }
-
-  override def toString = {
-    exception match {
-      case None => s"""
-     |{
-     |"time":"$time",
-     |"level":"$level",
-     |"thread":"$thread",
-     |"className":"$className",
-     |"methodName":"$methodName",
-     |"fileName":"$fileName",
-     |"lineNumber":"$lineNumber",
-     |"message":"$message",
-     |"stackTrace":"$stackTrace"
-     |}
-   """.stripMargin
-      case Some(e) => s"""
-     |{
-     |"time":"$time",
-     |"level":"$level",
-     |"thread":"$thread",
-     |"className":"$className",
-     |"methodName":"$methodName",
-     |"fileName":"$fileName",
-     |"lineNumber":"$lineNumber",
-     |"message":"$message",
-     |"stackTrace":"$stackTrace",
-     |"exception":"${formatThrowable(e)}" 
-     |}
-   """.stripMargin
-    }
-  }
 }
