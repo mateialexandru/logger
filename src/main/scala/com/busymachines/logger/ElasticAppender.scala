@@ -65,7 +65,8 @@ class ElasticAppender(name: String, layout: Layout[_ <: Serializable], filter: F
       time = Some(DateTimeFormat.longDateTime().print(event.getTimeMillis())),
       message = Some(event.getMessage().getFormattedMessage()))
 
-    val result = Option(event.getThrown()) map {
+    val (exceptionFormat, commonExceptionFormat) = event.getThrown() match {
+      case null => (None, None)
       case e: CommonException => {
         val cExInfo = CommonExceptionInfo(
           message = Some(e.getMessage),
@@ -78,12 +79,11 @@ class ElasticAppender(name: String, layout: Layout[_ <: Serializable], filter: F
       case e: Throwable => {
         val exInfo = DefaultExceptionInfo(
           message = Some(e.getMessage),
-          cause = Some(e.getCause.toString),
+          cause = Option(e.getCause()).map(_.toString),
           stackTrace = e.getStackTrace().toList.map(_.toString))
         (Some(exInfo), None)
       }
     }
-    val (exceptionFormat, commonExceptionFormat) = result.getOrElse((None, None))
     val message: LogMessage = LogMessage(cli, exceptionFormat, commonExceptionFormat)
     val messageJson = message.toJson.prettyPrint.toString
     try {
