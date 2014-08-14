@@ -1,16 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN" monitorInterval="30">
+<Configuration status="WARN" monitorInterval="30" packages="com.busymachines.logger">
     <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
+        <!--<Console name="Console" target="SYSTEM_OUT">-->
+            <!--<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>-->
+        <!--</Console>-->
+        <!--<File name="FileAp" fileName="output.log" bufferedIO="false" />-->
+        <Elastic name="ElasticAp"
+                 hostNames="localhost"
+                 port="9300"
+                 clusterName="elasticsearch"
+                 indexNamePrefix="logger"
+                 indexNameDateFormat="yyyy-MM-dd"
+                 indexDocumentType="log">
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-        </Console>
+        </Elastic>
     </Appenders>
     <Loggers>
-        <logger name="Bar" level="TRACE" additivity="false">
-            <AppenderRef ref="Console"/>
-        </logger>
+        <!--<logger name="Bar" level="TRACE" additivity="true">-->
+            <!--<AppenderRef ref="FileAp"/>-->
+            <!--<AppenderRef ref="ElasticAp"></AppenderRef>-->
+        <!--</logger>-->
         <Root level="ERROR">
-            <AppenderRef ref="Console"/>
+            <AppenderRef ref="ElasticAp"/>
         </Root>
     </Loggers>
 </Configuration>
