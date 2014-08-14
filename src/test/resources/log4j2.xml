@@ -16,7 +16,7 @@
         </Elastic>
     </Appenders>
     <Loggers>
-        <!--<logger name="Bar" level="TRACE" additivity="true">-->
+        <!--<logger name="com.busymachines.logger.Bar" level="TRACE" additivity="true">-->
             <!--<AppenderRef ref="FileAp"/>-->
             <!--<AppenderRef ref="ElasticAp"></AppenderRef>-->
         <!--</logger>-->

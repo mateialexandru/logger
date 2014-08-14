@@ -16,13 +16,14 @@ object loggerBuild extends Build {
     )++
     projectDependencies ++
     Revolver.settings ++
-    SbtOneJar.oneJarSettings
+    SbtOneJar.oneJarSettings++
+    compilerSettings
 
   def projectDependencies= Seq(libraryDependencies++=jars)++repositories
 
   def jars = Seq (
+    "com.busymachines" %% "busymachines-commons" % "0.4-SNAPSHOT" withSources() changing(),
     "org.scalatest" %% "scalatest" % "2.2.0" withSources(),
-    "org.specs2" %% "specs2" % "1.14" % "test" withSources(),
     "org.pegdown" % "pegdown" % "1.4.1" withSources(),
     "junit" % "junit" % "4.11" % "test" withSources(),
     "joda-time" % "joda-time" % "2.1" withSources(),
@@ -30,11 +31,13 @@ object loggerBuild extends Build {
     "org.elasticsearch" % "elasticsearch" % "1.3.1" withSources(),
     "com.codahale.metrics" % "metrics-core" % "3.0.1" withSources(),
     "org.apache.logging.log4j" % "log4j-api" % "2.0.1" withSources(),
-    "org.apache.logging.log4j" % "log4j-core" % "2.0.1" withSources()
+    "org.apache.logging.log4j" % "log4j-core" % "2.0.1" withSources(),
+    "io.spray" %% "spray-json" % "1.2.6" withSources()
 
   )
 
   def repositories = Seq (
+    resolvers += Resolver.url ("busymachines snapshots", url ("http://archiva.busymachines.com/repository/snapshots/"))(Resolver.ivyStylePatterns),
     resolvers += "spray repo" at "http://repo.spray.io",
     resolvers += "spray nightlies repo" at "http://nightlies.spray.io",
     resolvers += "Typesafe Maven Releases" at "http://repo.typesafe.com/typesafe/releases/",
@@ -46,4 +49,15 @@ object loggerBuild extends Build {
     credentials += Credentials (Path.userHome / ".ivy2" / ".credentials_busymachines_snapshots"),
     credentials += Credentials (Path.userHome / ".ivy2" / ".credentials_busymachines_releases")
   )
+
+  def compilerSettings = Seq (
+    scalaVersion := "2.11.1",
+    javacOptions in Compile ++= Seq ("-encoding", "utf8", "-g"),
+    scalacOptions ++= Seq("-deprecation", "-unchecked", "-encoding", "utf8"),
+    publishMavenStyle := false,
+    exportJars := true,
+    parallelExecution in Global := false,
+    javaOptions in Test += "-Xmx1500m",
+    javaOptions += "-Xmx1200m",
+    fork in test := true)
 }
