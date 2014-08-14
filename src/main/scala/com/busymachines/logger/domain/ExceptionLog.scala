@@ -11,7 +11,7 @@ case class CodeLocationInfo(
   time: Option[String],
   stackTrace: Option[String])
 
-case class DefaultException(
+case class DefaultExceptionInfo(
   val `type`: String = "StandardException",
   val message: Option[String],
   val cause: Option[String],
@@ -27,5 +27,5 @@ case class CommonExceptionInfo(
 
 case class LogMessage(
   codeLocation: CodeLocationInfo,
-  defaultException: Option[DefaultException] = None,
+  defaultException: Option[DefaultExceptionInfo] = None,
   commonException: Option[CommonExceptionInfo] = None)
