@@ -1,20 +1,27 @@
 package com.busymachines.logger
 
-import java.io.Serializable
 import org.apache.logging.log4j.LogManager
-import org.apache.logging.log4j.core.appender.{ AbstractAppender, DefaultErrorHandler }
-import org.apache.logging.log4j.core.config.plugins.{ PluginElement, PluginAttribute, PluginFactory, Plugin }
-import org.apache.logging.log4j.core.impl.ThrowableProxy
-import org.apache.logging.log4j.core.layout.{ AbstractStringLayout, PatternLayout }
-import org.apache.logging.log4j.core._
+import org.apache.logging.log4j.core.Filter
+import org.apache.logging.log4j.core.Layout
+import org.apache.logging.log4j.core.LogEvent
+import org.apache.logging.log4j.core.appender.AbstractAppender
+import org.apache.logging.log4j.core.config.plugins.Plugin
+import org.apache.logging.log4j.core.config.plugins.PluginAttribute
+import org.apache.logging.log4j.core.config.plugins.PluginElement
+import org.apache.logging.log4j.core.config.plugins.PluginFactory
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.ImmutableSettings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
+import org.elasticsearch.common.transport._
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
+import com.busymachines.logger.domain.CodeLocationInfo
+import com.busymachines.logger.domain.LogMessage
+import spray.json.pimpAny
+import com.busymachines.logger.domain.Implicits._
 import com.busymachines.commons.CommonException
-
-import com.busymachines.commons.Implicits._
+import com.busymachines.logger.domain.CommonExceptionInfo
+import com.busymachines.logger.domain.DefaultExceptionInfo
 
 /**
  * Created by Alexandru Matei on 14.08.2014.
@@ -47,33 +54,48 @@ class ElasticAppender(name: String, layout: Layout[_ <: Serializable], filter: F
     send(event)
   }
 
-  def send(event: LogEvent) {}
-//    val message = LogMessage(
-//      event.getLevel.toString,
-//      event.getThreadName,
-//      event.getSource.getClassName,
-//      event.getSource.getFileName,
-//      event.getSource.getMethodName,
-//      event.getSource.getLineNumber,
-//      event.getMessage.getFormattedMessage,
-//      DateTimeFormat.longDateTime.print(event.getTimeMillis),
-//      event.getThrownProxy match {
-//        case proxy: ThrowableProxy => proxy.getMessage
-//        case _ => ""
-//      },
-//      exception = Option(event.getThrown()))
+  def send(event: LogEvent) {
+    val cli: CodeLocationInfo = CodeLocationInfo(
+      level = Some(event.getLevel().toString()),
+      thread = Some(event.getThreadName()),
+      className = Some(event.getSource().getClassName()),
+      fileName = Some(event.getSource().getFileName()),
+      methodName = Some(event.getSource().getMethodName()),
+      lineNumber = Some(event.getSource().getLineNumber()),
+      time = Some(DateTimeFormat.longDateTime().print(event.getTimeMillis())),
+      message = Some(event.getMessage().getFormattedMessage()))
 
-//    try {
-//      client.prepareIndex(
-//        actualIndexName, indexDocumentType)
-//        .setSource(message.toString)
-//        .execute
-//        .actionGet
-//    } catch {
-//      case ex: Exception =>
-//        println(s"Exception while using ElasticSearch client! $ex")
-//    } finally {
-//    }
-//  }
-
+    val result = Option(event.getThrown()) map {
+      case e: CommonException => {
+        val cExInfo = CommonExceptionInfo(
+          message = Some(e.getMessage),
+          cause = Some(e.getCause.toString),
+          stackTrace = e.getStackTrace().toList.map(_.toString),
+          errorId = Some(e.errorId),
+          parameters = e.parameters)
+        (None, Some(cExInfo))
+      }
+      case e: Throwable => {
+        val exInfo = DefaultExceptionInfo(
+          message = Some(e.getMessage),
+          cause = Some(e.getCause.toString),
+          stackTrace = e.getStackTrace().toList.map(_.toString))
+        (Some(exInfo), None)
+      }
+    }
+    val (exceptionFormat, commonExceptionFormat) = result.getOrElse((None, None))
+    val message: LogMessage = LogMessage(cli, exceptionFormat, commonExceptionFormat)
+    val messageJson = message.toJson.prettyPrint.toString
+    try {
+      client.prepareIndex(
+        actualIndexName, indexDocumentType)
+        .setSource(messageJson)
+        .execute
+        .actionGet
+    } catch {
+      case ex: Exception =>
+        println(s"Exception while using ElasticSearch client! ${ex.getMessage()}")
+    } finally {
+    }
+  }
 }
