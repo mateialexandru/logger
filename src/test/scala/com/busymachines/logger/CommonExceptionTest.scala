@@ -7,11 +7,12 @@ import org.scalatest.FlatSpec
 /**
  * Created by Alexandru Matei on 14.08.2014.
  */
-class CommonExceptionTest extends FlatSpec{
+class CommonExceptionTest extends FlatSpec {
 
-  val logger= LogManager.getLogger()
+  val logger = LogManager.getLogger()
   "Logger" should "log commons exceptions properly" in {
-    logger.error("Commons Exception 1",  new CommonException("First type of error",Some("12"),Map("party"->"BusyMachines","user"->"Alexandru"),Some(new IndexOutOfBoundsException())))
-
+    //    logger.error("Commons Exception 1", new CommonException("First type of error", Some("12"), Map("party" -> "BusyMachines", "user" -> "Alexandru"), Some(new IndexOutOfBoundsException())))
+    val exc = new CommonException("First type of error", Some("12"), Map("party" -> "BusyMachines", "user" -> "Alexandru"), Some(new IndexOutOfBoundsException()))
+    logger.error("YO!", exc)
   }
 }
